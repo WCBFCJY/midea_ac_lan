@@ -115,14 +115,19 @@ class E2GeneralMessageBody(MessageBody):
         self.power = (body[2] & 0x01) > 0
         self.heating = (body[2] & 0x04) > 0
         self.keep_warm = (body[2] & 0x08) > 0
-        self.variable_heating = (body[2] & 0x80) > 0
         self.current_temperature = body[4]
-        self.whole_tank_heating = (body[7] & 0x08) > 0
         self.heating_time_remaining = body[9] * 60 + body[10]
         self.target_temperature = body[11]
         self.protection = ((body[22] & 0x02) > 0) if len(body) > 22 else False
-        if len(body) > 25:
-            self.water_consumption = body[24] + (body[25] << 8)
+        if len(body) > 33:
+            self.whole_tank_heating = (body[33] & 0x20) > 0
+            self.variable_heating = self.whole_tank_heating
+            self.water_consumption = body[5] * body[27] * 0.12
+        else:
+            self.variable_heating = (body[2] & 0x80) > 0
+            self.whole_tank_heating = (body[7] & 0x08) > 0
+            if len(body) > 25:
+                self.water_consumption = body[24] + (body[25] << 8)
         if len(body) > 34:
             self.heating_power = body[34] * 100
 
