@@ -116,20 +116,23 @@ class E2GeneralMessageBody(MessageBody):
         self.heating = (body[2] & 0x04) > 0
         self.keep_warm = (body[2] & 0x08) > 0
         self.current_temperature = body[4]
-        self.heating_time_remaining = body[9] * 60 + body[10]
+        self.heating_time_remaining = body[9] * 60 + body[10] if self.power else 0
         self.target_temperature = body[11]
         self.protection = ((body[22] & 0x02) > 0) if len(body) > 22 else False
-        if len(body) > 33:
+        if len(body) > 39:
+            if (body[39] >> 4) == 12:
+                dynamic_capexpansion = 12
+            else:
+                dynamic_capexpansion = 8  # Default 8-fold dynamic capacity expansion
             self.whole_tank_heating = (body[33] & 0x20) > 0
             self.variable_heating = self.whole_tank_heating
-            self.water_consumption = body[5] * body[27] * 0.12
+            self.water_consumption = 0.01 * body[5] * body[27] * dynamic_capexpansion
+            self.heating_power = body[34] * 100
         else:
             self.variable_heating = (body[2] & 0x80) > 0
             self.whole_tank_heating = (body[7] & 0x08) > 0
-            if len(body) > 25:
-                self.water_consumption = body[24] + (body[25] << 8)
-        if len(body) > 34:
-            self.heating_power = body[34] * 100
+            if len(body) > 24:
+                self.water_consumption = body[24]
 
 
 class MessageE2Response(MessageResponse):
